@@ -22,6 +22,8 @@ services:
       context: ./dbt
       dockerfile: Dockerfile
     working_dir: /usr/app/analytics
+    env_file:
+      - .env # for dbt to resolve env_var()
     environment:
       DBT_PROFILES_DIR: /usr/app
     ports:
@@ -40,6 +42,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+    env_file:
+      - .env
     environment:
       AIRFLOW__CORE__LOAD_EXAMPLES: "false"
       AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: "false"

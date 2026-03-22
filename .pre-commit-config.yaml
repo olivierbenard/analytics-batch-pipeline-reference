@@ -17,13 +17,13 @@ repos:
     hooks:
       - id: mypy
         name: mypy
-        entry: poetry run mypy src/
+        entry: poetry run mypy batch_pipeline_reference/
         language: system
         pass_filenames: false
 
       - id: pylint
         name: pylint
-        entry: poetry run pylint --disable=missing-module-docstring src/
+        entry: poetry run pylint --disable=missing-module-docstring batch_pipeline_reference/
         language: system
         pass_filenames: false
 

@@ -6,6 +6,14 @@ dbt-deps:
 dbt-run:
 	docker compose exec dbt bash -lc "cd /usr/app/analytics && dbt run --profiles-dir /usr/app"
 
+.PHONY: dbt-debug
+dbt-debug:
+	docker compose exec dbt bash -lc "cd /usr/app/analytics && dbt debug --profiles-dir /usr/app"
+
+.PHONY: dbt-parse
+dbt-parse:
+	docker compose exec dbt bash -lc "cd /usr/app/analytics && dbt parse --profiles-dir /usr/app"
+
 .PHONY: dbt-test
 dbt-test:
 	docker compose exec dbt bash -lc "cd /usr/app/analytics && dbt test --profiles-dir /usr/app"
