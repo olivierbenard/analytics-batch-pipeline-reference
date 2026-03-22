@@ -1,0 +1,63 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  lint-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        id: setup-python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # install poetry
+      - name: Install Poetry
+        uses: abatilo/actions-poetry@v4
+        with:
+          poetry-version: "1.8.3"
+
+      - name: Configure Poetry
+        run: poetry config virtualenvs.in-project true
+
+      - name: Cache virtualenv
+        uses: actions/cache@v4
+        with:
+          path: .venv
+          key: venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('poetry.lock') }}
+          restore-keys: |
+            venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-
+
+      # install project dependencies
+      - name: Install dependencies
+        run: |
+          poetry install --no-interaction
+
+      # run static type checking with ruff
+      - name: Check code formatting (ruff)
+        run: |
+          poetry run ruff check .
+          poetry run ruff format --check .
+
+      # run static type checking with mypy
+      - name: Run mypy
+        run: poetry run mypy --install-types --non-interactive batch_pipeline_reference/
+
+      # run linting with pylint
+      - name: Run pylint
+        run: poetry run pylint --disable=missing-module-docstring batch_pipeline_reference/
+
+      # run tests with pytest
+      - name: Run tests
+        run: poetry run pytest -q
+
+      # run tests + coverage with pytest
+      - name: Run tests with coverage
+        run: poetry run pytest --cov=batch_pipeline_reference --cov-branch --cov-report=term-missing --cov-fail-under=90

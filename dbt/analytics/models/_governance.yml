@@ -1,0 +1,12 @@
+version: 2
+
+groups:
+  - name: ingestion
+    owner:
+      name: Data Platform
+      email: data-platform@company.com
+
+  - name: finance
+    owner:
+      name: Finance Analytics
+      email: finance-data@company.com

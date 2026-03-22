@@ -1,0 +1,50 @@
+version: 2
+
+models:
+  - name: monthly_partner_premiums
+    description: >
+      Monthly premium totals aggregated by partner and currency.
+      Used by finance dashboards and revenue reporting.
+
+    config:
+      group: finance
+      access: public
+      tags: ['finance', 'premium', 'mart', 'daily']
+
+      meta:
+        owner: "@finance-analytics"
+        sla: "daily by 06:00 UTC"
+        pii: false
+        metric_layer: true
+        data_quality_tier: "gold"
+
+    columns:
+      - name: partner
+        description: Partner receiving the premium.
+        tests:
+          - not_null
+
+      - name: month
+        description: Month of aggregation.
+        tests:
+          - not_null
+
+      - name: currency
+        description: Currency of the aggregated premiums.
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['EUR', 'GBP']
+
+      - name: total_premium
+        description: Sum of processed premiums for the partner, month and currency.
+        tests:
+          - not_null
+          - not_negative # custom generic test
+
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns:
+            - partner
+            - month
+            - currency

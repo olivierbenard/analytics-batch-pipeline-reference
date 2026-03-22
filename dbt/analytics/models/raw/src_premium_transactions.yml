@@ -1,0 +1,35 @@
+version: 2
+
+sources:
+  - name: raw
+    description: Raw ingestion schema storing JSON envelopes of premium transactions populated by Airflow.
+    schema: raw
+
+    tables:
+      - name: premium_transactions_raw
+        description: >
+          Raw JSON records ingested from the source transaction file.
+          Each row contains the original payload and ingestion metadata.
+          No transformations are applied at this layer.
+        meta:
+          owner: "@data-platform"
+          ingestion: airflow
+          retention_policy: "append-only"
+
+        columns:
+          - name: ingestion_run_id
+            description: Identifier of the Airflow ingestion run.
+            tests:
+              - not_null
+
+          - name: payload_json
+            description: Original JSON transaction payload.
+
+          - name: payload_hash
+            description: Deterministic hash of the canonical JSON payload.
+            tests:
+              - not_null
+              - unique
+
+          - name: source_file
+            description: Name of the ingested source file.

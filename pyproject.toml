@@ -1,0 +1,30 @@
+[tool.poetry]
+name = "analytics-batch-pipeline-reference"
+version = "0.1.0"
+description = "Production-ready data pipeline for monthly premium aggregation from raw transaction records, designed for clarity, testability, and maintainability."
+authors = ["Olivier Bénard"]
+license = "proprietary"
+readme = "README.md"
+packages = [{include = "batch_pipeline_reference"}]
+
+[tool.poetry.dependencies]
+python = "^3.12"
+cryptography = "^46.0.5"
+
+[tool.poetry.group.dev.dependencies]
+ruff = "^0.15.5"
+mypy = "^1.19.1"
+pylint = "^4.0.5"
+pytest = "^9.0.2"
+pre-commit = "^4.5.1"
+pytest-cov = "^7.0.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.pytest.ini_options]
+markers = [
+    "integration: tests requiring external systems (database, services, etc.)",
+    "e2e: full end-to-end pipeline tests validating the entire batch workflow",
+]

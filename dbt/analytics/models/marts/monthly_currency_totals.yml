@@ -1,0 +1,27 @@
+version: 2
+
+models:
+  - name: monthly_currency_totals
+    description: Monthly premium totals aggregated by currency.
+
+    columns:
+      - name: month
+        description: Aggregation month.
+        tests:
+          - not_null
+
+      - name: currency
+        description: Currency of the aggregated premiums.
+        tests:
+          - not_null
+
+      - name: total_premium
+        description: Total premium per month and currency.
+        tests:
+          - not_null
+
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns:
+            - month
+            - currency

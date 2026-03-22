@@ -1,0 +1,77 @@
+services:
+  postgres:
+    build:
+      context: ./postgres
+      dockerfile: Dockerfile
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER} # USER role + GRANTs will automatically be created
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./postgres/init:/docker-entrypoint-initdb.d:ro # put init .sql scripts in postgres/init (e.g. roles or schemas creation)
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  dbt:
+    build:
+      context: ./dbt
+      dockerfile: Dockerfile
+    working_dir: /usr/app/analytics
+    environment:
+      DBT_PROFILES_DIR: /usr/app
+    ports:
+    - "8081:8081" # to expose dbt docs
+    volumes:
+      - ./dbt:/usr/app # without :ro is recommended for development so dbt can create ephemeral target/ and logs/ folders
+    depends_on:
+      postgres:
+        condition: service_healthy
+    entrypoint: ["bash", "-lc", "sleep infinity"] # keep container running for ad-hoc dbt commands
+
+  airflow:
+    build:
+      context: ./airflow
+      dockerfile: Dockerfile
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+      AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: "false"
+      AIRFLOW__WEBSERVER__EXPOSE_CONFIG: "true"
+      AIRFLOW__CORE__EXECUTOR: "SequentialExecutor"
+      AIRFLOW__CORE__FERNET_KEY: ${AIRFLOW_FERNET_KEY} # use to encrypt secrets stored in Airflow's DB (e.g. Variables / Connections); generated via `make fernet_key`
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: "sqlite:////opt/airflow/airflow.db" # prone to lock/race issues so root user need to be created a posteriori. Better to add a dedicated Postgres for Airflow metadata (DB) and run AF's webserver and scheduler as separate services.
+      # define airflow connection:
+      AIRFLOW_VAR_PREMIUM_PIPELINE_CONN_ID: analytics_postgres
+      AIRFLOW_CONN_ANALYTICS_POSTGRES: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}
+      # define airflow variables:
+      AIRFLOW_VAR_PREMIUM_PIPELINE_INPUT_PATH: /opt/airflow/input/premium_transactions_data_20250306.json
+      AIRFLOW_VAR_PREMIUM_PIPELINE_SOURCE_FILE: premium_transactions_data_20250306.json
+      AIRFLOW_VAR_PREMIUM_PIPELINE_OUTPUT_PATH: /opt/airflow/output/output_from_af.csv
+      AIRFLOW_VAR_DBT_PROJECT_DIR: /opt/airflow/dbt_project
+      AIRFLOW_VAR_DBT_PROFILES_DIR: /opt/airflow # makes the dbt path explicit
+    command: standalone
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./airflow/dags:/opt/airflow/dags:ro
+      - ./dbt/analytics:/opt/airflow/dbt_project
+      - ./dbt/profiles.yml:/opt/airflow/profiles.yml:ro
+      - ./input:/opt/airflow/input:ro
+      - ./output:/opt/airflow/output
+
+  python-batch:
+    build:
+      context: .
+      dockerfile: batch_pipeline_reference/Dockerfile
+    volumes:
+      - ./input:/app/input
+      - ./output:/app/output
+    profiles:
+      - batch

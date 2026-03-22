@@ -1,0 +1,62 @@
+version: 2
+
+models:
+  - name: stg_premium_transactions
+    description: Parsed and normalized premium transactions extracted from the raw JSON payload.
+
+    config:
+      group: ingestion
+      access: protected
+      tags: ['staging', 'premium']
+
+      meta:
+        owner: "@data-platform"
+        sla: "daily by 06:00 UTC"
+        pii: false
+        domain: "payments"
+
+    columns:
+      - name: transaction_id
+        description: Unique transaction identifier.
+        tests:
+          - not_null
+          - unique
+
+      - name: created_at
+        description: Creation timestamp of the transaction.
+        tests:
+          - not_null
+
+      - name: month
+        description: Month bucket derived from the transaction timestamp.
+        tests:
+          - not_null
+
+      - name: amount
+        description: Premium amount.
+        tests:
+          - not_null
+
+      - name: currency
+        description: Currency of the premium.
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['EUR', 'GBP']
+
+      - name: charged_partner
+        description: Partner receiving the premium.
+        tests:
+          - not_null
+
+      - name: status
+        description: Processing status of the transaction.
+        tests:
+          - not_null
+          - accepted_values: # adding 'process' because the real dataset contains it. Staging reflects reality while marts filters it out.
+              values: ['processed', 'failed', 'refunded', 'process']
+
+      - name: is_valid_status
+        description: Boolean flag identifying accepted statuses.
+        tests:
+          - not_null
